@@ -3,17 +3,17 @@ version: '3.8'
 services:
   # Streamlit Web 应用服务
   web:
-    build: .
-    image: tradingagents-cn:latest
+    # 使用GitHub Container Registry的预构建镜像
+    image: ghcr.io/maxage/tradingagents-cn:latest
     container_name: TradingAgents-web
     ports:
       - "8501:8501"
     volumes:
       - .env:/app/.env
-      # 开发环境代码映射
-      - ./web:/app/web
-      - ./tradingagents:/app/tradingagents
-      - ./scripts:/app/scripts
+      # 只保留数据和配置映射，移除代码映射（代码已在镜像中）
+      # - ./web:/app/web
+      # - ./tradingagents:/app/tradingagents
+      # - ./scripts:/app/scripts
       # 日志目录映射 - 重要：将容器内日志映射到当前项目的logs目录
       - ./logs:/app/logs
       # 配置目录映射 - 重要：持久化token统计和其他配置数据
@@ -73,7 +73,8 @@ services:
       MONGO_INITDB_DATABASE: tradingagents
     volumes:
       - mongodb_data:/data/db
-      - ./scripts/mongo-init.js:/docker-entrypoint-initdb.d/mongo-init.js:ro
+      # 如果没有mongo-init.js文件，可以注释掉这行
+      # - ./scripts/mongo-init.js:/docker-entrypoint-initdb.d/mongo-init.js:ro
     networks:
       - tradingagents-network
     healthcheck:
