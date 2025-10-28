@@ -51,8 +51,8 @@ RUN grep -v "pywin32" requirements-lock.txt > requirements-linux.txt && \
 # 复制项目代码
 COPY . .
 
-# 安装项目本身
-RUN pip install -e .
+# 安装项目本身，跳过依赖检查避免复杂的依赖解析
+RUN pip install -e . --no-deps
 
 # 复制日志配置文件
 COPY config/ ./config/
