@@ -1,5 +1,5 @@
-# 使用Python 3.10.8，与requirements-lock.txt生成环境一致
-FROM python:3.10.8-slim-bookworm
+# 使用Python 3.10，与requirements-lock.txt生成环境一致
+FROM python:3.10-slim-bookworm
 
 WORKDIR /app
 
