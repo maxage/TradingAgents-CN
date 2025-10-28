@@ -1,8 +1,5 @@
-# 使用官方Python镜像替代GitHub Container Registry
-FROM python:3.10-slim-bookworm
-
-# 安装uv包管理器
-RUN pip install -i https://mirrors.aliyun.com/pypi/simple uv
+# 使用Python 3.10.8，与requirements-lock.txt生成环境一致
+FROM python:3.10.8-slim-bookworm
 
 WORKDIR /app
 
@@ -11,15 +8,19 @@ RUN mkdir -p /app/data /app/logs
 ENV PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1
 
-RUN echo 'deb http://mirrors.aliyun.com/debian/ bookworm main' > /etc/apt/sources.list && \
-    echo 'deb-src http://mirrors.aliyun.com/debian/ bookworm main' >> /etc/apt/sources.list && \
-    echo 'deb http://mirrors.aliyun.com/debian/ bookworm-updates main' >> /etc/apt/sources.list && \
-    echo 'deb-src http://mirrors.aliyun.com/debian/ bookworm-updates main' >> /etc/apt/sources.list && \
-    echo 'deb http://mirrors.aliyun.com/debian-security bookworm-security main' >> /etc/apt/sources.list && \
-    echo 'deb-src http://mirrors.aliyun.com/debian-security bookworm-security main' >> /etc/apt/sources.list
+# 使用官方Debian源
+RUN echo 'deb http://deb.debian.org/debian bookworm main' > /etc/apt/sources.list && \
+    echo 'deb-src http://deb.debian.org/debian bookworm main' >> /etc/apt/sources.list && \
+    echo 'deb http://deb.debian.org/debian bookworm-updates main' >> /etc/apt/sources.list && \
+    echo 'deb-src http://deb.debian.org/debian bookworm-updates main' >> /etc/apt/sources.list && \
+    echo 'deb http://deb.debian.org/debian-security bookworm-security main' >> /etc/apt/sources.list && \
+    echo 'deb-src http://deb.debian.org/debian-security bookworm-security main' >> /etc/apt/sources.list
 
+# 安装系统依赖
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
+    curl \
+    git \
     wkhtmltopdf \
     xvfb \
     fonts-wqy-zenhei \
@@ -33,24 +34,27 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 RUN echo '#!/bin/bash\nXvfb :99 -screen 0 1024x768x24 -ac +extension GLX &\nexport DISPLAY=:99\nexec "$@"' > /usr/local/bin/start-xvfb.sh \
     && chmod +x /usr/local/bin/start-xvfb.sh
 
-COPY requirements.txt .
+# 升级pip到最新版本
+RUN pip install --upgrade pip
 
-#多源轮询安装依赖
-RUN set -e; \
-    for src in \
-        https://mirrors.aliyun.com/pypi/simple \
-        https://pypi.tuna.tsinghua.edu.cn/simple \
-        https://pypi.doubanio.com/simple \
-        https://pypi.org/simple; do \
-      echo "Try installing from $src"; \
-      pip install --no-cache-dir -r requirements.txt -i $src && break; \
-      echo "Failed at $src, try next"; \
-    done
+# 复制依赖文件
+COPY requirements-lock.txt .
+
+# 使用官方PyPI源安装依赖
+# 先安装基础构建工具
+RUN pip install --no-cache-dir wheel setuptools
+
+# 安装requirements-lock.txt中的所有依赖
+RUN pip install --no-cache-dir -r requirements-lock.txt
+
+# 复制项目代码
+COPY . .
+
+# 安装项目本身
+RUN pip install -e .
 
 # 复制日志配置文件
 COPY config/ ./config/
-
-COPY . .
 
 EXPOSE 8501
 
