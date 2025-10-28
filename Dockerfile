@@ -44,8 +44,9 @@ COPY requirements-lock.txt .
 # 先安装基础构建工具
 RUN pip install --no-cache-dir wheel setuptools
 
-# 安装requirements-lock.txt中的所有依赖
-RUN pip install --no-cache-dir -r requirements-lock.txt
+# 安装requirements-lock.txt中的所有依赖，跳过Windows专用包
+RUN grep -v "pywin32" requirements-lock.txt > requirements-linux.txt && \
+    pip install --no-cache-dir -r requirements-linux.txt
 
 # 复制项目代码
 COPY . .
